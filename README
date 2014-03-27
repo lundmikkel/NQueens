@@ -1,0 +1,10 @@
+Compile:
+javac -cp "javabdd-1.0b2.jar:." *.java
+
+Run:
+java -cp "javabdd-1.0b2.jar:." ShowBoard
+
+Links:
+http://javabdd.sourceforge.net/xref/NQueens.html
+file://localhost/Users/jonasbusk/Documents/itu/SISP/Queens/apidocs/index.html
+http://bok.me/uploads/NQueens.pdf
