@@ -1,10 +1,11 @@
 /**
  * This class implements the logic behind the BDD for the n-queens problem
  * You should implement all the missing methods
- * 
+ *
  * @author Stavros Amanatidis
  *
  */
+
 import java.util.*;
 
 import net.sf.javabdd.*;
@@ -17,38 +18,30 @@ public class QueensLogic {
     private int[][] board;
 
     // BDD
-    private int nodenum   = 2000000;
-    private int cachesize =  200000;
+    private int nodenum = 2000000;
+    private int cachesize = 200000;
     private BDDFactory fact;
     private BDD True;
     private BDD False;
     private BDD[][] X; // BDD variables
     private BDD queen; // n-queens BDD
 
-
-    public QueensLogic() {
-        // constructor
-        // leave empty
-    }
-
     public void initializeGame(int n) {
-        this.N = n;
-        // this.x = n;
-        // this.y = n;
-        this.board = new int[N][N];
-        
+        N = n;
+        board = new int[N][N];
+
         // BDD
-        this.fact = JFactory.init(nodenum, cachesize);
-        fact.setVarNum(N*N);
-        this.True = fact.one();
-        this.False = fact.zero();
-        this.queen = True;
+        fact = JFactory.init(nodenum, cachesize);
+        fact.setVarNum(N * N);
+        True = fact.one();
+        False = fact.zero();
+        queen = True;
 
         // build BDD variable array X
-        this.X = new BDD[N][N];
+        X = new BDD[N][N];
         for (int i = 0; i < N; i++)
-            for(int j = 0; j < N; j++)
-                X[i][j] = fact.ithVar(i*N+j);
+            for (int j = 0; j < N; j++)
+                X[i][j] = fact.ithVar(i * N + j);
 
         // build rule that every row should have a queen
         for (int i = 0; i < N; i++) {
@@ -76,13 +69,13 @@ public class QueensLogic {
         if (board[column][row] == -1 || board[column][row] == 1) {
             return true;
         }
-        
+
         board[column][row] = 1;
-        
+
         // put some logic here..
-        
+
         printBoard();
-      
+
         return true;
     }
 
@@ -100,8 +93,8 @@ public class QueensLogic {
         // row
         for (int k = 0; k < N; k++) {
             if (k != i) {
-                 BDD u = X[i][j].apply(X[k][j], BDDFactory.nand);
-                 b.andWith(u);
+                BDD u = X[i][j].apply(X[k][j], BDDFactory.nand);
+                b.andWith(u);
             }
         }
 
@@ -137,11 +130,11 @@ public class QueensLogic {
     // Print board state to console
     private void printBoard() {
         System.out.println("Board:");
-        for(int j = 0; j < N; j++) {
-            for(int i = 0; i < N; i++) {
-                if(board[i][j] < 0) {
+        for (int j = 0; j < N; j++) {
+            for (int i = 0; i < N; i++) {
+                if (board[i][j] < 0) {
                     System.out.print("x ");
-                } else if(board[i][j] > 0) {
+                } else if (board[i][j] > 0) {
                     System.out.print("1 ");
                 } else {
                     System.out.print("0 ");
