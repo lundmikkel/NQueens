@@ -5,29 +5,23 @@
  * @author Stavros Amanatidis
  *
  */
+
 import java.util.*;
 
 import net.sf.javabdd.*;
 
 public class QueensLogic {
-    private int x = 0;
-    private int y = 0;
+    private int N;
     private int[][] board;
 
-    //my vars:
     private BDDFactory factory;
     private BDD True;
     private BDD False;
     private BDD bdd;
-    private int N;
-
-    public QueensLogic() {
-        //constructor
-    }
 
     public void initializeGame(int size) {
-        N = x = y = size;
-        board = new int[x][y];
+        N = size;
+        board = new int[N][N];
         buildBDD();
 
         // Run update invalid (Not really needed in this case, but good practice)
@@ -42,8 +36,8 @@ public class QueensLogic {
         factory.setVarNum(N * N);
 
         //For clarity
-        False = this.factory.zero();
-        True = this.factory.one();
+        False = factory.zero();
+        True = factory.one();
 
         //Initalize our bdd to true
         bdd = True;
@@ -53,114 +47,115 @@ public class QueensLogic {
         createEightRule();
     }
 
-    //All rows should have a queen:
+    private void createRules() {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                createCellRule(x, y);
+            }
+        }
+    }
+
+    private void createCellRule(int x, int y) {
+        BDD restFalseBdd = True;
+
+        // All other y's must be false
+        for (int yy = 0; yy < N; yy++) {
+            if (y != yy) {
+                restFalseBdd = restFalseBdd.and(factory.nithVar(place(x, yy)));
+            }
+        }
+
+        // All other x's must be false
+        for (int xx = 0; xx < N; xx++) {
+            if (x != xx) {
+                restFalseBdd = restFalseBdd.and(factory.nithVar(place(xx, y)));
+            }
+        }
+
+        // All other y+xx-x must be false
+        for (int xx = 0; xx < N; xx++) {
+            if (x != xx) {
+                if ((y + xx - x < N) && (y + xx - x > 0)) {
+                    restFalseBdd = restFalseBdd.and(factory.nithVar(place(xx, y + xx - x)));
+                }
+            }
+        }
+
+        // All other y-xx+xx must be false
+        for (int xx = 0; xx < N; xx++) {
+            if (x != xx) {
+                if ((y - xx + x < N) && (y - xx + x > 0)) {
+                    restFalseBdd = restFalseBdd.and(this.factory.nithVar(place(xx, y - xx + x)));
+                }
+            }
+        }
+
+        // Either the x,y is false
+        BDD subBdd = factory.nithVar(place(x, y));
+
+        // Or (if the x,y is true) the rest is false
+        subBdd = subBdd.or(restFalseBdd);
+
+        // subBdd must be true
+        bdd = bdd.and(subBdd);
+    }
+
+    private int place(int column, int row) {
+        return row * N + column;
+    }
+
+    // All rows should have a queen
     private void createEightRule() {
         for (int y = 0; y < N; y++) {
-            BDD sub_bdd = False;
+            BDD subBdd = False;
 
             for (int x = 0; x < N; x++) {
-                sub_bdd = sub_bdd.or(this.factory.ithVar(place(x,y)));
+                subBdd = subBdd.or(factory.ithVar(place(x, y)));
             }
 
             //sub_bdd must be true
-            bdd = bdd.and(sub_bdd);
+            bdd = bdd.and(subBdd);
         }
-    }
-
-    private void createRules() {
-        for (int x = 0; x < N; x++) {
-            for (int y = 0; y < N; y++) {
-                createCellRule(x,y);
-            }
-        }
-    }
-
-    private void createCellRule(int x,int y) {
-        BDD sub_bdd = False;
-        BDD rest_false_bdd = True;
-
-        //All other y's must be false
-        for (int yy = 0; yy < N; yy++) {
-            if (y != yy) {
-                rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(x,yy)));
-            }
-        }
-
-        //All other x's must be false
-        for (int xx = 0; xx < N; xx++) {
-            if (x != xx) {
-                rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(xx,y)));
-            }
-        }
-
-        //All other y+xx-x must be false
-        for (int xx = 0; xx < N; xx++) {
-            if (x != xx) {
-                if ((y+xx-x < N) && (y+xx-x > 0)) {
-                    rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(xx,y+xx-x)));
-                }
-            }
-        }
-
-        //All other y-xx+xx must be false
-        for (int xx = 0; xx < N; xx++) {
-            if (x != xx) {
-                if ((y-xx+x < N) && (y-xx+x > 0)) {
-                    rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(xx,y-xx+x)));
-                }
-            }
-        }
-
-        //Either the x,y is false
-        sub_bdd = sub_bdd.or(this.factory.nithVar(place(x,y)));
-        //Or (if the x,y is true) the rest is false
-        sub_bdd = sub_bdd.or(rest_false_bdd);
-
-        //sub_bdd must be true
-        this.bdd = this.bdd.and(sub_bdd);
-    }
-
-    private int place(int column,int row) {
-        return row*this.N+column;
-    }
-
-    private boolean placeInvalid(int column,int row) {
-        //add queen at x ,y
-        BDD test_bdd = this.bdd.restrict(this.factory.ithVar(place(column,row)));
-        //check if unsatisfiable?
-        return test_bdd.isZero();
     }
 
     public int[][] getGameBoard() {
         return board;
     }
 
+    public boolean insertQueen(int x, int y) {
+
+        if (board[x][y] == -1 || board[x][y] == 1) {
+            return true;
+        }
+
+        // Set a queen in graphic
+        board[x][y] = 1;
+
+        //Set a queen in the bdd
+        bdd = bdd.restrict(factory.ithVar(place(x, y)));
+
+        updateInvalid();
+
+        return true;
+    }
+
     private void updateInvalid() {
-        //For each cell, check if placing a queen there makes it invalid
-        //If so, make that places graphic be -1
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if (placeInvalid(i,j)) {
-                    board[i][j] = -1;
+        // For each square, check if placing a queen there makes it invalid
+        // If so, make the square be -1
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                if (placeInvalid(x, y)) {
+                    board[y][x] = -1;
                 }
             }
         }
     }
 
-    public boolean insertQueen(int column, int row) {
+    private boolean placeInvalid(int x, int y) {
+        // Add queen at x ,y
+        BDD testBdd = bdd.restrict(factory.ithVar(place(x, y)));
 
-        if (board[column][row] == -1 || board[column][row] == 1) {
-            return true;
-        }
-
-        //Set a queen in graphic
-        board[column][row] = 1;
-
-        //Set a queen in the bdd
-        this.bdd = this.bdd.restrict(this.factory.ithVar(row*this.N+column));
-
-        updateInvalid();
-
-        return true;
+        // Check if unsatisfiable?
+        return testBdd.isZero();
     }
 }
