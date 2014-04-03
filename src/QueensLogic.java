@@ -136,6 +136,8 @@ public class QueensLogic {
 
         updateInvalid();
 
+        placeDefiniteQueens();
+
         return true;
     }
 
@@ -145,17 +147,25 @@ public class QueensLogic {
         for (int y = 0; y < N; y++) {
             for (int x = 0; x < N; x++) {
                 if (placeInvalid(x, y)) {
-                    board[y][x] = -1;
+                    board[x][y] = -1;
                 }
             }
         }
     }
 
     private boolean placeInvalid(int x, int y) {
-        // Add queen at x ,y
-        BDD testBdd = bdd.restrict(factory.ithVar(place(x, y)));
+        return bdd.restrict(factory.ithVar(place(x, y))).isZero();
+    }
 
-        // Check if unsatisfiable?
-        return testBdd.isZero();
+    private void placeDefiniteQueens() {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                if (board[x][y] == 0) {
+                    if (bdd.restrict(factory.nithVar(place(x, y))).isZero()) {
+                        insertQueen(x, y);
+                    }
+                }
+            }
+        }
     }
 }
