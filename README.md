@@ -11,6 +11,8 @@ This project was build for an AI class at the IT-university:
 The following is a 'Project report'. (We have to make one for our course, if you
 want to keep your sanity, I would stop reading now.)
 
+Our solution is inspired by a solver for the nqueens problem implemented by John Whaley found here: http://javabdd.sourceforge.net/xref/NQueens.html
+
 Project report
 ==============
 
