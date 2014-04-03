@@ -6,10 +6,13 @@
 import javax.swing.*;
 
 public class ShowBoard {
-	public static void main(String[] arg) {
+	public static void main(String[] args) {
 		QueensLogic l = new QueensLogic();
-		
-		int size = 8;
+
+        int size = 8;
+        if (args.length > 0)
+            size = Integer.parseInt(args[0]);
+
 		l.initializeGame(size);
 
 		QueensGUI g = new QueensGUI(l);

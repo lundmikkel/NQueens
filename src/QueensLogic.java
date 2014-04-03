@@ -19,34 +19,34 @@ public class QueensLogic {
     private BDD True;
     private BDD False;
     private BDD bdd;
-    private int N = 8;
+    private int N;
 
     public QueensLogic() {
         //constructor
     }
 
     public void initializeGame(int size) {
-        this.x = size;
-        this.y = size;
-        this.board = new int[x][y];
+        N = x = y = size;
+        board = new int[x][y];
         buildBDD();
-        //Run update invalid (Not really needed in this case, but good practice)
+
+        // Run update invalid (Not really needed in this case, but good practice)
         updateInvalid();
     }
 
     public void buildBDD() {
         //Factory
-        this.factory = JFactory.init(2000000, 200000); // set buffer etc.
+        factory = JFactory.init(2000000, 200000); // set buffer etc.
 
         //64 fields => 64 variables
-        this.factory.setVarNum(this.N*this.N);
+        factory.setVarNum(N * N);
 
         //For clarity
-        this.False = this.factory.zero();
-        this.True = this.factory.one();
+        False = this.factory.zero();
+        True = this.factory.one();
 
         //Initalize our bdd to true
-        this.bdd = True;
+        bdd = True;
 
         //Add the rules to the bdd
         createRules();
@@ -63,7 +63,7 @@ public class QueensLogic {
             }
 
             //sub_bdd must be true
-            this.bdd = this.bdd.and(sub_bdd);
+            bdd = bdd.and(sub_bdd);
         }
     }
 
@@ -96,7 +96,7 @@ public class QueensLogic {
         //All other y+xx-x must be false
         for (int xx = 0; xx < N; xx++) {
             if (x != xx) {
-                if ((y+xx-x < 8) && (y+xx-x > 0)) {
+                if ((y+xx-x < N) && (y+xx-x > 0)) {
                     rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(xx,y+xx-x)));
                 }
             }
@@ -105,7 +105,7 @@ public class QueensLogic {
         //All other y-xx+xx must be false
         for (int xx = 0; xx < N; xx++) {
             if (x != xx) {
-                if ((y-xx+x < 8) && (y-xx+x > 0)) {
+                if ((y-xx+x < N) && (y-xx+x > 0)) {
                     rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(xx,y-xx+x)));
                 }
             }
