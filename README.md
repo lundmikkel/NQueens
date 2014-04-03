@@ -11,6 +11,8 @@ This project was build for an AI class at the IT-university:
 The following is a 'Project report'. (We have to make one for our course, if you
 want to keep your sanity, I would stop reading now.)
 
+Our solution is inspired by a solver for the nqueens problem implemented by John Whaley found here: http://javabdd.sourceforge.net/xref/NQueens.html
+
 Project report
 ==============
 
@@ -77,6 +79,8 @@ The BDD turns out to be a very easy way to allow for interactive restrictions. H
 A nice part of using a BDD library is that a lot of optimisations have already been provided. The interface is as responsive as you could expect from a swing program.
 
 ### Conclusion
+We succeeded to build a working configurator for the nqueens problem that satisfies our requirements using the provided tools.
+
 It has been fun to work with the BDD library. Eventhough java is so ugly, we actually had a lot of fun building this.
 
 ### License
