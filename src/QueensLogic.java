@@ -5,63 +5,146 @@
  * @author Stavros Amanatidis
  *
  */
-
 import java.util.*;
 
 import net.sf.javabdd.*;
 
 public class QueensLogic {
-
-    private int N = 0;
-    // private int x = 0;
-    // private int y = 0;
+    private int x = 0;
+    private int y = 0;
     private int[][] board;
 
-    // BDD
-    private int nodenum = 2000000;
-    private int cachesize = 200000;
-    private BDDFactory fact;
+    //my vars:
+    private BDDFactory factory;
     private BDD True;
     private BDD False;
-    private BDD[][] X; // BDD variables
-    private BDD queen; // n-queens BDD
+    private BDD bdd;
+    private int N = 8;
 
-    public void initializeGame(int n) {
-        N = n;
-        board = new int[N][N];
+    public QueensLogic() {
+        //constructor
+    }
 
-        // BDD
-        fact = JFactory.init(nodenum, cachesize);
-        fact.setVarNum(N * N);
-        True = fact.one();
-        False = fact.zero();
-        queen = True;
+    public void initializeGame(int size) {
+        this.x = size;
+        this.y = size;
+        this.board = new int[x][y];
+        buildBDD();
+        //Run update invalid (Not really needed in this case, but good practice)
+        updateInvalid();
+    }
 
-        // build BDD variable array X
-        X = new BDD[N][N];
-        for (int i = 0; i < N; i++)
-            for (int j = 0; j < N; j++)
-                X[i][j] = fact.ithVar(i * N + j);
+    public void buildBDD() {
+        //Factory
+        this.factory = JFactory.init(2000000, 200000); // set buffer etc.
 
-        // build rule that every row should have a queen
-        for (int i = 0; i < N; i++) {
-            BDD e = False;
-            for (int j = 0; j < N; j++) {
-                e.orWith(X[i][j].id());
+        //64 fields => 64 variables
+        this.factory.setVarNum(this.N*this.N);
+
+        //For clarity
+        this.False = this.factory.zero();
+        this.True = this.factory.one();
+
+        //Initalize our bdd to true
+        this.bdd = True;
+
+        //Add the rules to the bdd
+        createRules();
+        createEightRule();
+    }
+
+    //All rows should have a queen:
+    private void createEightRule() {
+        for (int y = 0; y < N; y++) {
+            BDD sub_bdd = False;
+
+            for (int x = 0; x < N; x++) {
+                sub_bdd = sub_bdd.or(this.factory.ithVar(place(x,y)));
             }
-            queen.andWith(e);
-        }
 
-        // build rules for each board space
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                buildQueenBDD(i, j);
+            //sub_bdd must be true
+            this.bdd = this.bdd.and(sub_bdd);
+        }
+    }
+
+    private void createRules() {
+        for (int x = 0; x < N; x++) {
+            for (int y = 0; y < N; y++) {
+                createCellRule(x,y);
             }
         }
     }
 
+    private void createCellRule(int x,int y) {
+        BDD sub_bdd = False;
+        BDD rest_false_bdd = True;
+
+        //All other y's must be false
+        for (int yy = 0; yy < N; yy++) {
+            if (y != yy) {
+                rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(x,yy)));
+            }
+        }
+
+        //All other x's must be false
+        for (int xx = 0; xx < N; xx++) {
+            if (x != xx) {
+                rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(xx,y)));
+            }
+        }
+
+        //All other y+xx-x must be false
+        for (int xx = 0; xx < N; xx++) {
+            if (x != xx) {
+                if ((y+xx-x < 8) && (y+xx-x > 0)) {
+                    rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(xx,y+xx-x)));
+                }
+            }
+        }
+
+        //All other y-xx+xx must be false
+        for (int xx = 0; xx < N; xx++) {
+            if (x != xx) {
+                if ((y-xx+x < 8) && (y-xx+x > 0)) {
+                    rest_false_bdd = rest_false_bdd.and(this.factory.nithVar(place(xx,y-xx+x)));
+                }
+            }
+        }
+
+        //Either the x,y is false
+        sub_bdd = sub_bdd.or(this.factory.nithVar(place(x,y)));
+        //Or (if the x,y is true) the rest is false
+        sub_bdd = sub_bdd.or(rest_false_bdd);
+
+        //sub_bdd must be true
+        this.bdd = this.bdd.and(sub_bdd);
+    }
+
+    private int place(int column,int row) {
+        return row*this.N+column;
+    }
+
+    private boolean placeInvalid(int column,int row) {
+        //add queen at x ,y
+        BDD test_bdd = this.bdd.restrict(this.factory.ithVar(place(column,row)));
+        //check if unsatisfiable?
+        return test_bdd.isZero();
+    }
+
     public int[][] getGameBoard() {
         return board;
+    }
+
+    private void updateInvalid() {
+        //For each cell, check if placing a queen there makes it invalid
+        //If so, make that places graphic be -1
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                if (placeInvalid(i,j)) {
+                    board[i][j] = -1;
+                }
+            }
+        }
     }
 
     public boolean insertQueen(int column, int row) {
@@ -70,78 +153,14 @@ public class QueensLogic {
             return true;
         }
 
+        //Set a queen in graphic
         board[column][row] = 1;
 
-        // put some logic here..
+        //Set a queen in the bdd
+        this.bdd = this.bdd.restrict(this.factory.ithVar(row*this.N+column));
 
-        printBoard();
+        updateInvalid();
 
         return true;
-    }
-
-    private void buildQueenBDD(int i, int j) {
-        BDD a = True, b = True, c = True, d = True;
-
-        // column
-        for (int l = 0; l < N; l++) {
-            if (l != j) {
-                BDD u = X[i][l].apply(X[i][j], BDDFactory.nand);
-                a.andWith(u);
-            }
-        }
-
-        // row
-        for (int k = 0; k < N; k++) {
-            if (k != i) {
-                BDD u = X[i][j].apply(X[k][j], BDDFactory.nand);
-                b.andWith(u);
-            }
-        }
-
-        // diagonal /
-        for (int k = 0; k < N; k++) {
-            int l = k - i + j;
-            if (l >= 0 && l < N) {
-                if (k != i) {
-                    BDD u = X[i][j].apply(X[k][l], BDDFactory.nand);
-                    c.andWith(u);
-                }
-            }
-        }
-
-        // diagonal \
-        for (int k = 0; k < N; k++) {
-            int l = i + j - k;
-            if (l >= 0 && l < N) {
-                if (k != i) {
-                    BDD u = X[i][j].apply(X[k][l], BDDFactory.nand);
-                    d.andWith(u);
-                }
-            }
-        }
-
-        // combine
-        c.andWith(d);
-        b.andWith(c);
-        a.andWith(b);
-        queen.andWith(a);
-    }
-
-    // Print board state to console
-    private void printBoard() {
-        System.out.println("Board:");
-        for (int j = 0; j < N; j++) {
-            for (int i = 0; i < N; i++) {
-                if (board[i][j] < 0) {
-                    System.out.print("x ");
-                } else if (board[i][j] > 0) {
-                    System.out.print("1 ");
-                } else {
-                    System.out.print("0 ");
-                }
-            }
-            System.out.println();
-        }
-        System.out.println();
     }
 }
